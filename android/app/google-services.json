@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "275179618795",
+    "project_id": "gig-connect-ccdbe",
+    "storage_bucket": "gig-connect-ccdbe.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:275179618795:android:c7c04b860c2a0b94a519ae",
+        "android_client_info": {
+          "package_name": "com.example.gig_connect"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "275179618795-988eglaih2tang40ef02a9192b0onebt.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBoezcpV1hcDfZEzO-YvcxgS0fAVzeiRtE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "275179618795-988eglaih2tang40ef02a9192b0onebt.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "275179618795-upb5jsrt7ihcemofd941svjn6npnnhn0.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.gigConnect"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
