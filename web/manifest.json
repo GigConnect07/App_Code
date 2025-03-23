@@ -1,6 +1,6 @@
 {
-    "name": "gig_connect",
-    "short_name": "gig_connect",
+    "name": "gig_connnect",
+    "short_name": "gig_connnect",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

@@ -1,4 +1,4 @@
-# gig_connect
+# gig_connnect
 
 A new Flutter project.
 
