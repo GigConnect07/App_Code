@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "863228899499",
+    "project_id": "gig-connect-2f8fc",
+    "storage_bucket": "gig-connect-2f8fc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:863228899499:android:738bb9c83bdafbcb8a87ee",
+        "android_client_info": {
+          "package_name": "com.example.final5"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "863228899499-7bmiulnuhv4a89vcj5n4nd1sap6p6klb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDqYDz0i3aOP3xSu6OZumB3te4_c_UnFm8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "863228899499-7bmiulnuhv4a89vcj5n4nd1sap6p6klb.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
