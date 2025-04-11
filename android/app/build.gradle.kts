@@ -28,7 +28,7 @@ android {
     defaultConfig {
         applicationId = "com.example.final5"
         minSdk = 24  // Override Flutter's default to ensure minimum 21
-        34.also { targetSdk = it }
+        targetSdk = 34
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }

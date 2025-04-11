@@ -1,8 +1,7 @@
 // screens/role_selection_screen.dart
+import 'package:final5/screens/register_details.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'profile_screen.dart';
+import 'register_details.dart';
 
 class RoleSelectionScreen extends StatelessWidget {
   const RoleSelectionScreen({super.key});
@@ -10,84 +9,52 @@ class RoleSelectionScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
+      body: Padding(
+        padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
-              'Select Your Role',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 40),
-            _buildRoleButton(
-              context: context,
-              role: 'worker',
-              label: "I'm a Worker",
-              color: Colors.blue[700]!,
-            ),
+            const Icon(Icons.work, size: 80, color: Color(0xFFBA55D3)),
             const SizedBox(height: 20),
-            _buildRoleButton(
-              context: context,
-              role: 'recruiter',
-              label: "I'm a Recruiter",
-              color: Colors.green[700]!,
-            ),
+            const Text('Welcome to Gig-Connect',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 40),
+            _buildRoleCard(context, 'Worker'),
+            const SizedBox(height: 20),
+            _buildRoleCard(context, 'Recruiter'),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildRoleButton({
-    required BuildContext context,
-    required String role,
-    required String label,
-    required Color color,
-  }) {
-    return SizedBox(
-      width: 200,
-      height: 60,
-      child: ElevatedButton(
-        onPressed: () => _setRole(context, role),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+  Widget _buildRoleCard(BuildContext context, String title) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(15),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => RegistrationScreen(isRecruiter: title == 'Recruiter'),
           ),
         ),
-        child: Text(
-          label,
-          style: const TextStyle(fontSize: 18),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            children: [
+              Icon(
+                title == 'Worker' ? Icons.person : Icons.business,
+                size: 40,
+                color: const Color(0xFFBA55D3),
+              ),
+              const SizedBox(width: 20),
+              Text(title, style: const TextStyle(fontSize: 20)),
+            ],
+          ),
         ),
       ),
     );
-  }
-
-  Future<void> _setRole(BuildContext context, String role) async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
-
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .update({
-        'profileType': role,
-        'lastUpdated': FieldValue.serverTimestamp(),
-      });
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => ProfileScreen()),
-
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error setting role: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
   }
 }

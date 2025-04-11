@@ -1,49 +1,56 @@
 import 'package:flutter/material.dart';
-import 'register_details.dart';
-import '../widgets/custom_textfield.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../error_handler.dart';
 
-class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
+class RegisterScreen extends StatelessWidget {
+  RegisterScreen({super.key});
 
-  @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
-}
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
 
-class _RegisterScreenState extends State<RegisterScreen> {
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController nameController = TextEditingController();
-  final TextEditingController phoneController = TextEditingController();
+  Future<void> _register() async {
+    try {
+      final UserCredential credential = await _auth.createUserWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      // Navigate to role selection screen
+      if (credential.user != null) {
+        Navigator.pushReplacementNamed(context, '/role-selection');
+      }
+    } on FirebaseAuthException catch (e) {
+      ErrorHandler.showAuthError(e.code);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Register")),
+      appBar: AppBar(title: const Text('Register')),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            CustomTextField(hint: "Email", controller: emailController, inputType: TextInputType.emailAddress),
-            const SizedBox(height: 16),
-            CustomTextField(hint: "Name", controller: nameController),
-            const SizedBox(height: 16),
-            CustomTextField(hint: "Phone", controller: phoneController, inputType: TextInputType.phone),
-            const Spacer(),
+            TextField(
+              controller: _emailController,
+              decoration: const InputDecoration(labelText: 'Email'),
+              keyboardType: TextInputType.emailAddress,
+            ),
+            TextField(
+              controller: _passwordController,
+              decoration: const InputDecoration(labelText: 'Password'),
+              obscureText: true,
+            ),
+            const SizedBox(height: 20),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(50)),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => RegisterDetailsScreen(
-                      name: nameController.text,
-                      email: emailController.text,
-                      phone: phoneController.text,
-                    ),
-                  ),
-                );
-
-              },
-              child: const Text("Next"),
+              onPressed: _register,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFBA55D3),
+                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+              ),
+              child: const Text('Register'),
             ),
           ],
         ),

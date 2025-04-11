@@ -1,248 +1,291 @@
+// profile_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:firebase_analytics/firebase_analytics.dart';
-import 'package:mime/mime.dart';
-import 'dart:io';
-import '../widgets/skill_assessment_card.dart';
 
-class ProfileScreen extends StatefulWidget {
-  final FirebaseFirestore firestore;
-  final FirebaseAuth auth;
 
-  ProfileScreen({
-    super.key,
-    FirebaseFirestore? firestore,
-    FirebaseAuth? auth,
-  }) : firestore = firestore ?? FirebaseFirestore.instance,
-        auth = auth ?? FirebaseAuth.instance;
-
+class ProfileScreen extends ConsumerWidget {
+  const ProfileScreen({super.key});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('My Profile'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const RecruiterScreen())),
+          ),
+        ],
+      ),
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('users')
+            .doc(user!.uid)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+
+          final userData = snapshot.data!.data() as Map<String, dynamic>;
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _ProfileHeader(userData: userData),
+                const SizedBox(height: 24),
+                _AboutSection(userData: userData),
+                const SizedBox(height: 24),
+                if (userData['userType'] == 'recruiter') ...[
+                  _IndustryPreferences(userData: userData),
+                  const SizedBox(height: 24),
+                ],
+                _SkillsSection(userData: userData),
+                const SizedBox(height: 24),
+                _AIGenerateButton(userId: user.uid),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
-  final FirebaseStorage _storage = FirebaseStorage.instance;
-  final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
-  User? _user;
-  Map<String, dynamic>? userData;
-  File? _backgroundImage;
-  File? _profileImage;
-  bool _isLoading = false;
+class _ProfileHeader extends StatelessWidget {
+  final Map<String, dynamic> userData;
+
+  const _ProfileHeader({required this.userData});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Container(
+          height: 200,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            image: DecorationImage(
+              image: NetworkImage(userData['coverImage'] ?? ''),
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: 16,
+          left: 16,
+          child: CircleAvatar(
+            radius: 50,
+            backgroundImage: NetworkImage(userData['profileImage'] ?? ''),
+          ),
+        ),
+        Positioned(
+          bottom: 16,
+          right: 16,
+          child: IconButton(
+            icon: const Icon(Icons.camera_alt),
+            onPressed: () => _updateProfileImage(context),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _updateProfileImage(BuildContext context) async {
+    final image = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      // Upload to Firebase Storage and update Firestore
+    }
+  }
+}
+
+class _AboutSection extends StatefulWidget {
+  final Map<String, dynamic> userData;
+
+  const _AboutSection({required this.userData});
+
+  @override
+  State<_AboutSection> createState() => _AboutSectionState();
+}
+
+class _AboutSectionState extends State<_AboutSection> {
+  late TextEditingController _aboutController;
 
   @override
   void initState() {
     super.initState();
-    _user = widget.auth.currentUser;
-    _loadUserData();
-    _logProfileView();
-  }
-
-  Future<void> _logProfileView() async {
-    await _analytics.logEvent(
-      name: 'profile_view',
-      parameters: {'user_id': _user?.uid ?? 'unknown_user'},
-    );
-  }
-
-  Future<void> _loadUserData() async {
-    if (_user == null) return;
-
-    setState(() => _isLoading = true);
-    try {
-      final doc = await widget.firestore.collection('users').doc(_user!.uid).get();
-      if (doc.exists) {
-        setState(() => userData = doc.data() ?? <String, dynamic>{});
-      }
-    } catch (e) {
-      _showError('Failed to load profile data');
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _uploadImage(bool isProfile) async {
-    try {
-      final image = await ImagePicker().pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 80,
-        maxWidth: 2000,
-        maxHeight: 2000,
-      );
-
-      if (image == null) return;
-
-      final mime = lookupMimeType(image.path);
-      if (mime == null || !['image/jpeg', 'image/png'].contains(mime)) {
-        _showError('Only JPG/PNG images allowed');
-        return;
-      }
-
-      final file = File(image.path);
-      final size = await file.length();
-      if (size > 5 * 1024 * 1024) {
-        _showError('Image must be smaller than 5MB');
-        return;
-      }
-
-      setState(() => isProfile ? _profileImage = file : _backgroundImage = file);
-
-      final ref = _storage.ref().child(
-        'users/${_user!.uid}/${isProfile ? 'profile' : 'background'}.jpg',
-      );
-      await ref.putFile(file);
-      final url = await ref.getDownloadURL();
-
-      await widget.firestore.collection('users').doc(_user!.uid).update({
-        isProfile ? 'profileImage' : 'backgroundImage': url,
-        'lastUpdated': FieldValue.serverTimestamp(),
-      });
-
-      _loadUserData();
-    } catch (e) {
-      _showError('Failed to upload image');
-    }
-  }
-
-  Future<void> _shareProfile() async {
-    try {
-      await Share.share(
-        'Check out my profile on Gig Connect!',
-        subject: 'Gig Connect Profile',
-      );
-    } catch (e) {
-      _showError('Failed to share profile');
-    }
-  }
-
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red[700],
-      ),
-    );
-  }
-
-  Widget _buildProfileHeader() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            userData?['name'] ?? 'No Name',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          if (userData?['profileType'] == 'recruiter')
-            Text(
-              'Recruiter at ${userData?['company'] ?? ''}',
-              style: Theme.of(context).textTheme.bodyLarge,
-            )
-          else
-            Text(
-              userData?['skills']?.join(' • ') ?? 'Skilled Worker',
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProfileImage() {
-    final ImageProvider? image = _profileImage != null
-        ? FileImage(_profileImage!)
-        : (userData?['profileImage'] != null
-        ? NetworkImage(userData!['profileImage'].toString())
-        : null);
-
-    return GestureDetector(
-      onTap: () => _uploadImage(true),
-      child: CircleAvatar(
-        radius: 50,
-        backgroundColor: Colors.grey[200],
-        backgroundImage: image,
-        child: image == null
-            ? const Icon(Icons.person, size: 50, color: Colors.grey)
-            : null,
-      ),
-    );
-  }
-
-  Widget _buildBackgroundImage() {
-    final ImageProvider? image = _backgroundImage != null
-        ? FileImage(_backgroundImage!)
-        : (userData?['backgroundImage'] != null
-        ? NetworkImage(userData!['backgroundImage'].toString())
-        : null);
-
-    return GestureDetector(
-      onTap: () => _uploadImage(false),
-      child: Container(
-        height: 200,
-        decoration: BoxDecoration(
-          color: Colors.grey[300],
-          image: image != null
-              ? DecorationImage(
-            image: image,
-            fit: BoxFit.cover,
-          )
-              : null,
-        ),
-        child: image == null
-            ? const Center(child: Icon(Icons.camera_alt, size: 50, color: Colors.grey))
-            : null,
-      ),
-    );
+    _aboutController = TextEditingController(text: widget.userData['about']);
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_user == null) {
-      return const Scaffold(
-        body: Center(child: Text('Please log in to view profile')),
-      );
-    }
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('About', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                IconButton(
+                  icon: const Icon(Icons.edit),
+                  onPressed: () => _showEditDialog(context),
+                ),
+              ],
+            ),
+            Text(widget.userData['about'] ?? ''),
+          ],
+        ),
+      ),
+    );
+  }
 
-    if (_isLoading || userData == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 200,
-            flexibleSpace: _buildBackgroundImage(),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.share),
-                onPressed: _shareProfile,
-              ),
-            ],
+  void _showEditDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit About'),
+        content: TextField(
+          controller: _aboutController,
+          maxLines: 5,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
           ),
-          SliverList(
-            delegate: SliverChildListDelegate([
-              _buildProfileHeader(),
-              _buildProfileImage(),
-              const SizedBox(height: 20),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: SkillAssessmentCard(skill: 'Flutter'),
-              ),
-            ]),
+          TextButton(
+            onPressed: () {
+              FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(FirebaseAuth.instance.currentUser!.uid)
+                  .update({'about': _aboutController.text});
+              Navigator.pop(context);
+            },
+            child: const Text('Save'),
           ),
         ],
       ),
     );
+  }
+}
+
+class _IndustryPreferences extends StatelessWidget {
+  final Map<String, dynamic> userData;
+
+  const _IndustryPreferences({required this.userData});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Industries I Hire For',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            ...(userData['industries'] ?? []).map<Widget>((industry) => ListTile(
+              title: Text(industry['name']),
+              subtitle: Text(industry['description']),
+              trailing: IconButton(
+                icon: const Icon(Icons.edit),
+                onPressed: () {/* Edit industry */},
+              ),
+            )).toList(),
+            TextButton(
+              onPressed: () {/* Add new industry */},
+              child: const Text('Add Industry'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SkillsSection extends StatelessWidget {
+  final Map<String, dynamic> userData;
+
+  const _SkillsSection({required this.userData});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Skills',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: (userData['skills'] ?? []).map<Widget>((skill) => Chip(
+                label: Text(skill),
+                backgroundColor: Colors.purple.withOpacity(0.1),
+              )).toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AIGenerateButton extends StatefulWidget {
+  final String userId;
+
+  const _AIGenerateButton({required this.userId});
+
+  @override
+  State<_AIGenerateButton> createState() => _AIGenerateButtonState();
+}
+
+class _AIGenerateButtonState extends State<_AIGenerateButton> {
+  bool _isGenerating = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton.icon(
+      icon: _isGenerating
+          ? const CircularProgressIndicator()
+          : const Icon(Icons.auto_awesome),
+      label: const Text('Generate Skills with AI'),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFFBA55D3),
+        padding: const EdgeInsets.symmetric(vertical: 16),
+      ),
+      onPressed: _isGenerating ? null : _generateSkills,
+    );
+  }
+
+  Future<void> _generateSkills() async {
+    setState(() => _isGenerating = true);
+
+    try {
+      // Call Deepseek API
+      // final response = await http.post(...);
+
+      // Process response and update Firestore
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.userId)
+          .update({'skills': FieldValue.arrayUnion(newSkills)});
+    } finally {
+      setState(() => _isGenerating = false);
+    }
   }
 }

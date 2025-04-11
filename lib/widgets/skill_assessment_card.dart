@@ -1,48 +1,67 @@
-// widgets/skill_assessment_card.dart
-import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+class SkillSelectionSheet extends StatefulWidget {
+  final String workerType;
+  final Function(List<String>) onSkillsSelected;
 
-class SkillAssessmentCard extends StatelessWidget {
-  final String skill;
+  const SkillSelectionSheet({
+    super.key,
+    required this.workerType,
+    required this.onSkillsSelected,
+  });
 
-  const SkillAssessmentCard({super.key, required this.skill});
+  @override
+  State<SkillSelectionSheet> createState() => _SkillSelectionSheetState();
+}
+
+class _SkillSelectionSheetState extends State<SkillSelectionSheet> {
+  final Map<String, List<String>> skillDatabase = {
+    'Mason': ['Bricklaying', 'Stonework', 'Concrete Finishing', 'Block Walls'],
+    'Electrician': ['Wiring', 'Circuit Installation', 'Safety Systems'],
+    'Plumber': ['Pipe Fitting', 'Drain Cleaning', 'Water Heater Installation'],
+  };
+
+  List<String> selectedSkills = [];
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<QuerySnapshot>(
-      future: FirebaseFirestore.instance
-          .collection('assessments')
-          .where('skill', isEqualTo: skill)
-          .orderBy('date', descending: true)
-          .limit(1)
-          .get(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const CircularProgressIndicator();
-        }
-
-        if (snapshot.hasError) {
-          return Text('Error: ${snapshot.error}');
-        }
-
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return ElevatedButton(
-            onPressed: () => _takeAssessmentTest(skill),
-            child: const Text('Take Assessment Test'),
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+      Text(
+      "Select skills for ${widget.workerType}",
+        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      ),
+      const SizedBox(height: 20),
+      Wrap(
+        spacing: 10,
+        runSpacing: 10,
+        children: skillDatabase[widget.workerType]!.map((skill) {
+          return FilterChip(
+            label: Text(skill),
+            selected: selectedSkills.contains(skill),
+            onSelected: (selected) => setState(() {
+              selected
+                  ? selectedSkills.add(skill)
+                  : selectedSkills.remove(skill);
+            }),
+            selectedColor: const Color(0xFFBA55D3).withOpacity(0.3),
           );
-        }
-
-        final assessment = snapshot.data!.docs.first.data() as Map<String, dynamic>;
-        return Chip(
-          label: Text('Certified: ${assessment['score']}%'),
-          backgroundColor: Colors.green[100],
-          avatar: const Icon(Icons.verified, color: Colors.green),
-        );
-      },
+        }).toList(),
+      ),
+      const SizedBox(height: 20),
+      ElevatedButton(
+        onPressed: () {
+          widget.onSkillsSelected(selectedSkills);
+          Navigator.pop(context);
+        },
+        style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFFBA55D3)),
+      ),
+      child: const Text("Confirm Skills"),
+    )
+    ],
+    ),
     );
-  }
-
-  void _takeAssessmentTest(String skill) {
-    // Implement assessment test flow
   }
 }
