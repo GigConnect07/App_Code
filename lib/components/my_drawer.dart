@@ -6,7 +6,6 @@ import 'package:gig_connect/pages/settings_page.dart';
 class MyDrawer extends StatelessWidget {
   const MyDrawer({super.key});
 
-  @override
   void signUserOut(){
     FirebaseAuth.instance.signOut();
   }
