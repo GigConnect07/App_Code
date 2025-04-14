@@ -1,6 +1,7 @@
+// main.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'screens/role_selection_screen.dart';
+import 'screens/profile_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,14 +15,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Gig-Connect',
-      theme: ThemeData(
-        primaryColor: const Color(0xFFBA55D3),
-        colorScheme: ColorScheme.fromSwatch().copyWith(
-          secondary: const Color(0xFFBA55D3),
-        ),
-      ),
-      home: const RoleSelectionScreen(),
+      title: 'Gig Connect',
+      home: ContractorProfileScreen(), // Directly load profile
+      debugShowCheckedModeBanner: false,
     );
   }
 }

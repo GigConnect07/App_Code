@@ -7,7 +7,7 @@ class ProfileTypeSwitch extends StatelessWidget {
   final Map<String, dynamic>? userData;
   final VoidCallback loadUserData;
   final FirebaseFirestore firestore;
-  final User? user;
+  final User? user; 
 
   const ProfileTypeSwitch({
     super.key,
