@@ -1,0 +1,106 @@
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+class ViewProfilePage extends StatelessWidget {
+  final String userId;
+
+  const ViewProfilePage({super.key, required this.userId});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Profile"),
+        backgroundColor: Colors.deepPurpleAccent,
+      ),
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('worker_profiles')
+            .doc(userId)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (!snapshot.hasData || !snapshot.data!.exists) {
+            return const Center(child: Text('Profile not found'));
+          }
+
+          final data = snapshot.data!.data() as Map<String, dynamic>;
+
+          return ListView(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            children: [
+              Column(
+                children: [
+                  const CircleAvatar(
+                    radius: 60,
+                    backgroundImage:
+                        NetworkImage("https://i.imgur.com/OB0y6MR.jpg"),
+                  ),
+                  const SizedBox(height: 15),
+                  Text(
+                    data['username'] ?? 'No name',
+                    style: const TextStyle(
+                        fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    data['role'] ?? 'No role specified',
+                    style: const TextStyle(color: Colors.grey, fontSize: 15),
+                  ),
+                  const SizedBox(height: 20),
+                  _buildInfoCard("Personal Information",
+                      data['personalInfo'] ?? 'No personal info provided'),
+                  _buildInfoCard("Skills", data['skills'] ?? 'No skills added'),
+                  _buildInfoCard("Work History",
+                      data['workHistory'] ?? 'No work history provided'),
+                  _buildInfoCard("Experience",
+                      data['experience'] ?? 'No experience specified'),
+                  _buildInfoCard(
+                      "Location", data['location'] ?? 'No location specified'),
+                  _buildInfoCard("Availability",
+                      data['availability'] ?? 'No availability specified'),
+                ],
+              )
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildInfoCard(String title, String content) {
+    return Container(
+      width: 350,
+      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.deepPurpleAccent,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Color.fromARGB(255, 255, 255, 255),
+                fontSize: 20),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            content,
+            style: const TextStyle(color: Colors.white),
+          ),
+        ],
+      ),
+    );
+  }
+}

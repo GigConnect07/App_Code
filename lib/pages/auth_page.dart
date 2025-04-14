@@ -1,7 +1,7 @@
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:gig_connect/pages/home_page.dart';
+import 'package:gig_connect/pages/directing_page.dart';
 import 'package:gig_connect/pages/login_or_register_page.dart';
 
 class AuthPage extends StatelessWidget {
@@ -13,7 +13,7 @@ class AuthPage extends StatelessWidget {
       body: StreamBuilder(stream: FirebaseAuth.instance.authStateChanges(), builder:(context, snapshot) {
         //if user is logged in
         if (snapshot.hasData) {
-          return HomePage();
+          return DirectingPage();
         }
         //if user not logged in
         else{

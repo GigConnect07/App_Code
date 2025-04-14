@@ -1,6 +1,6 @@
 
 import 'package:flutter/material.dart';
-import 'package:gig_connect/pages/login_page.dart';
+import 'package:gig_connect/pages/ask_user.dart';
 import 'package:gig_connect/pages/register_page.dart';
 
 class LoginOrRegisterPage extends StatefulWidget {
@@ -23,10 +23,10 @@ class _LoginOrRegisterPageState extends State<LoginOrRegisterPage> {
   @override
   Widget build(BuildContext context) {
     if (showLoginPage==true) {
-      return LoginPage(onTap: togglePages);
+      return UserSelectionPage();
     }
     else{
-      return RegisterPage(onTap: togglePages,);
+      return RegisterFlow(onLoginTap: togglePages,);
     }
   }
 }
