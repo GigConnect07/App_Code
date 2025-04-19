@@ -6,12 +6,23 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:final5/services/ai_editor_service.dart';
+import 'worker_profile_screen.dart';
 import 'package:final5/services/ai_edit_dialog.dart';
+import 'package:final5/services/auth_screen.dart';
+import 'package:final5/services/chat_screen.dart';
+import 'package:final5/services/contractor_main_screen.dart';
+import 'package:final5/services/contractor_profile_page.dart';
+import 'package:final5/services/firebase_options.dart';
+import 'package:final5/services/job_applications_list_page.dart';
+import 'package:final5/services/jods_application_page.dart';
+import 'package:final5/services/notifications_page.dart';
+import 'package:final5/services/post_job_page.dart';
+import 'package:final5/services/posted_jobs_page.dart';
+import 'package:final5/services/registration_page.dart';
 
 void main() {
   runApp(const MyApp());
 }
-
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -97,7 +108,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 border: OutlineInputBorder(),
               ),
             ),
-
             const SizedBox(height: 20),
             ElevatedButton.icon(
               onPressed: _isGenerating ? null : () => _handleAIEdit('About'),
@@ -138,7 +148,8 @@ class ContractorProfileScreen extends StatefulWidget {
   const ContractorProfileScreen({super.key});
 
   @override
-  State<ContractorProfileScreen> createState() => _ContractorProfileScreenState();
+  State<ContractorProfileScreen> createState() =>
+      _ContractorProfileScreenState();
 }
 
 class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
@@ -160,7 +171,8 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _websiteController = TextEditingController();
-  final TextEditingController _establishedYearController = TextEditingController();
+  final TextEditingController _establishedYearController =
+      TextEditingController();
   final TextEditingController _aboutController = TextEditingController();
   TextEditingController _profileImageUrl = TextEditingController();
   TextEditingController _backgroundImageUrl = TextEditingController();
@@ -191,10 +203,8 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
 
   Future<void> _fetchContractorData() async {
     try {
-      final docSnapshot = await _firestore
-          .collection('Contractor')
-          .doc(documentId)
-          .get();
+      final docSnapshot =
+          await _firestore.collection('Contractor').doc(documentId).get();
 
       if (docSnapshot.exists) {
         setState(() {
@@ -204,25 +214,32 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
           _profileImageUrl = contractorData['profileImageUrl'];
           _backgroundImageUrl = contractorData['backgroundImageUrl'];
 
-
           // Set controller values
-          _companyNameController.text = contractorData['companyName']?.toString() ?? '';
-          _industryController.text = contractorData['industry']?.toString() ?? '';
-          _locationController.text = contractorData['location']?.toString() ?? '';
+          _companyNameController.text =
+              contractorData['companyName']?.toString() ?? '';
+          _industryController.text =
+              contractorData['industry']?.toString() ?? '';
+          _locationController.text =
+              contractorData['location']?.toString() ?? '';
           _cityController.text = contractorData['City']?.toString() ?? '';
           _emailController.text = contractorData['email']?.toString() ?? '';
           _phoneController.text =
               (contractorData['phone'] as num?)?.toInt().toString() ?? '';
           _establishedYearController.text =
-              (contractorData['establishedYear'] as num?)?.toInt().toString() ?? '';
+              (contractorData['establishedYear'] as num?)?.toInt().toString() ??
+                  '';
           // Handle website field properly (could be a DocumentReference or string)
           if (contractorData['website'] is DocumentReference) {
-            _websiteController.text = (contractorData['website'] as DocumentReference).path;
+            _websiteController.text =
+                (contractorData['website'] as DocumentReference).path;
           } else {
-            _websiteController.text = contractorData['website']?.toString() ?? '';
+            _websiteController.text =
+                contractorData['website']?.toString() ?? '';
           }
-          _establishedYearController.text = contractorData['establishedYear']?.toString() ?? '';
-          _aboutController.text = contractorData['about']?.toString() ?? 'Experienced worker with skills in the trade. Passionate about quality work and customer satisfaction.';
+          _establishedYearController.text =
+              contractorData['establishedYear']?.toString() ?? '';
+          _aboutController.text = contractorData['about']?.toString() ??
+              'Experienced worker with skills in the trade. Passionate about quality work and customer satisfaction.';
         });
       } else {
         setState(() {
@@ -254,7 +271,6 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
         'phone': _phoneController.text.isNotEmpty
             ? int.tryParse(_phoneController.text)
             : null,
-
         'establishedYear': _establishedYearController.text.isNotEmpty
             ? int.tryParse(_establishedYearController.text)
             : null,
@@ -280,7 +296,9 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
       await _fetchContractorData();
 
       if (mounted) {
-        setState(() { isEditing = false; });
+        setState(() {
+          isEditing = false;
+        });
       }
 
       _showSnackBar('Profile updated successfully');
@@ -365,7 +383,6 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
     // Store context before async gap
     final BuildContext currentContext = context;
 
-
     return showDialog(
       context: currentContext,
       builder: (context) {
@@ -388,7 +405,8 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
                 if (jobController.text.isEmpty) return;
 
                 try {
-                  List<dynamic> currentJobs = List.from(contractorData['jobPostings'] ?? []);
+                  List<dynamic> currentJobs =
+                      List.from(contractorData['jobPostings'] ?? []);
                   currentJobs.add(jobController.text);
 
                   await _firestore
@@ -414,6 +432,7 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
       },
     );
   }
+
   Future<void> _updateProfileImage() async {
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
     if (pickedFile == null) return;
@@ -435,7 +454,7 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
     } catch (e) {
       _showSnackBar('Error uploading profile image: $e');
     } finally {
-      if(mounted) setState(() => isLoading = false);
+      if (mounted) setState(() => isLoading = false);
     }
   }
 
@@ -460,13 +479,14 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
     } catch (e) {
       _showSnackBar('Error uploading background image: $e');
     } finally {
-      if(mounted) setState(() => isLoading = false);
+      if (mounted) setState(() => isLoading = false);
     }
   }
 
   Future<void> _removeJobPosting(int index) async {
     try {
-      List<dynamic> currentJobs = List.from(contractorData['jobPostings'] ?? []);
+      List<dynamic> currentJobs =
+          List.from(contractorData['jobPostings'] ?? []);
       if (index >= 0 && index < currentJobs.length) {
         currentJobs.removeAt(index);
 
@@ -495,16 +515,41 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
       // Generate skills based on industry
       List<String> generatedSkills = [];
 
-      String industry = contractorData['industry']?.toString().toLowerCase() ?? '';
+      String industry =
+          contractorData['industry']?.toString().toLowerCase() ?? '';
 
       if (industry.contains('construction')) {
-        generatedSkills = ['Blueprint Reading', 'Framing', 'Drywall Installation', 'Safety Compliance', 'Power Tools'];
+        generatedSkills = [
+          'Blueprint Reading',
+          'Framing',
+          'Drywall Installation',
+          'Safety Compliance',
+          'Power Tools'
+        ];
       } else if (industry.contains('electrical')) {
-        generatedSkills = ['Circuit Analysis', 'Voltage Testing', 'Wiring', 'Electrical Code Knowledge', 'Troubleshooting'];
+        generatedSkills = [
+          'Circuit Analysis',
+          'Voltage Testing',
+          'Wiring',
+          'Electrical Code Knowledge',
+          'Troubleshooting'
+        ];
       } else if (industry.contains('plumbing')) {
-        generatedSkills = ['Pipe Fitting', 'Leak Detection', 'Drain Cleaning', 'Fixture Installation', 'Water Heater Repair'];
+        generatedSkills = [
+          'Pipe Fitting',
+          'Leak Detection',
+          'Drain Cleaning',
+          'Fixture Installation',
+          'Water Heater Repair'
+        ];
       } else {
-        generatedSkills = ['Project Management', 'Problem Solving', 'Safety Procedures', 'Quality Control', 'Team Management'];
+        generatedSkills = [
+          'Project Management',
+          'Problem Solving',
+          'Safety Procedures',
+          'Quality Control',
+          'Team Management'
+        ];
       }
 
       // Update Firestore with generated skills
@@ -549,26 +594,26 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
-        onRefresh: _fetchContractorData,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Column(
-            children: [
-              _buildProfileHeader(),
-              _buildProfileDetails(),
-              _buildJobPostings(),
-              const SizedBox(height: 24),
-              _buildMetricsSection(),
-              _buildSimilarProfiles(),
-              _buildActionButtons(),
-
-              const SizedBox(height: 20),
-            ],
-          ),
-        ),
-      ),
+              onRefresh: _fetchContractorData,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  children: [
+                    _buildProfileHeader(),
+                    _buildProfileDetails(),
+                    _buildJobPostings(),
+                    const SizedBox(height: 24),
+                    _buildMetricsSection(),
+                    _buildSimilarProfiles(),
+                    _buildActionButtons(),
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ),
+            ),
     );
   }
+
   Widget _buildProfileHeader() {
     return Stack(
       clipBehavior: Clip.none,
@@ -584,8 +629,9 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
               image: DecorationImage(
                 image: contractorData['backgroundImageUrl'] != null
                     ? CachedNetworkImageProvider(
-                    contractorData['backgroundImageUrl'])
-                    : const AssetImage('assets/default_bg.jpg') as ImageProvider,
+                        contractorData['backgroundImageUrl'])
+                    : const AssetImage('assets/default_bg.jpg')
+                        as ImageProvider,
                 fit: BoxFit.cover,
               ),
             ),
@@ -615,7 +661,7 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
                     radius: 56,
                     backgroundImage: contractorData['profileImageUrl'] != null
                         ? CachedNetworkImageProvider(
-                        contractorData['profileImageUrl'])
+                            contractorData['profileImageUrl'])
                         : null,
                     child: contractorData['profileImageUrl'] == null
                         ? Icon(Icons.person, size: 50, color: Colors.grey)
@@ -669,17 +715,21 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
             _buildEditableField('Email', _emailController),
             _buildEditableField('Website', _websiteController),
             _buildEditableField(
-            'Phone',
-            _phoneController,
-            keyboardType: TextInputType.phone,  // Use phone keyboard
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],  // Restrict to numbers
+              'Phone',
+              _phoneController,
+              keyboardType: TextInputType.phone, // Use phone keyboard
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly
+              ], // Restrict to numbers
             ),
 // For established year field
             _buildEditableField(
-            'Established Year',
-            _establishedYearController,
-            keyboardType: TextInputType.number,  // Use number keyboard
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],  // Restrict to numbers
+              'Established Year',
+              _establishedYearController,
+              keyboardType: TextInputType.number, // Use number keyboard
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly
+              ], // Restrict to numbers
             ),
           ] else ...[
             Center(
@@ -701,15 +751,19 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            _buildInfoRow(Icons.location_on, 'Location', contractorData['location']?.toString() ?? ''),
-            _buildInfoRow(Icons.location_city, 'City', contractorData['City']?.toString() ?? ''),
+            _buildInfoRow(Icons.location_on, 'Location',
+                contractorData['location']?.toString() ?? ''),
+            _buildInfoRow(Icons.location_city, 'City',
+                contractorData['City']?.toString() ?? ''),
             _buildInfoRow(
               Icons.date_range,
               'Established',
               contractorData['establishedYear']?.toString() ?? 'N/A',
             ),
-            _buildInfoRow(Icons.assignment_ind, 'Contractor ID', (contractorData['website'] as DocumentReference).path),
-            _buildInfoRow(Icons.email, 'Email', contractorData['email']?.toString() ?? ''),
+            _buildInfoRow(Icons.assignment_ind, 'Contractor ID',
+                (contractorData['website'] as DocumentReference).path),
+            _buildInfoRow(Icons.email, 'Email',
+                contractorData['email']?.toString() ?? ''),
             _buildInfoRow(
               Icons.phone,
               'Phone',
@@ -777,7 +831,8 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.deepPurple,
                       ),
-                      child: const Text('Save', style: TextStyle(color: Colors.white)),
+                      child: const Text('Save',
+                          style: TextStyle(color: Colors.white)),
                     ),
                   ],
                 ),
@@ -797,17 +852,17 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
   }
 
   Widget _buildEditableField(
-      String label,
-      TextEditingController controller, {
-        TextInputType? keyboardType,       // Add this optional parameter
-        List<TextInputFormatter>? inputFormatters,  // Add this optional parameter
-      }) {
+    String label,
+    TextEditingController controller, {
+    TextInputType? keyboardType, // Add this optional parameter
+    List<TextInputFormatter>? inputFormatters, // Add this optional parameter
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: TextField(
         controller: controller,
-        keyboardType: keyboardType,    // Pass keyboard type
-        inputFormatters: inputFormatters,  // Pass input formatters
+        keyboardType: keyboardType, // Pass keyboard type
+        inputFormatters: inputFormatters, // Pass input formatters
         decoration: InputDecoration(
           labelText: label,
           border: const OutlineInputBorder(),
@@ -864,13 +919,15 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          if (jobPostings != null && jobPostings is List && jobPostings.isNotEmpty)
+          if (jobPostings != null &&
+              jobPostings is List &&
+              jobPostings.isNotEmpty)
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: List.generate(
                 jobPostings.length,
-                    (index) => Stack(
+                (index) => Stack(
                   clipBehavior: Clip.none,
                   children: [
                     Chip(
@@ -889,7 +946,8 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
                               color: Colors.white,
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.cancel, size: 16, color: Colors.red),
+                            child: const Icon(Icons.cancel,
+                                size: 16, color: Colors.red),
                           ),
                         ),
                       ),
@@ -900,7 +958,8 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
           else
             Text(
               'No job postings available',
-              style: TextStyle(color: Colors.grey[600], fontStyle: FontStyle.italic),
+              style: TextStyle(
+                  color: Colors.grey[600], fontStyle: FontStyle.italic),
             ),
         ],
       ),
@@ -937,7 +996,8 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
                   contractorData['rating']?.toString() ?? 'N/A',
                   Icons.star,
                   showStars: true,
-                  ratingValue: (contractorData['rating'] as num?)?.toDouble() ?? 0,
+                  ratingValue:
+                      (contractorData['rating'] as num?)?.toDouble() ?? 0,
                 ),
               ),
             ],
@@ -947,7 +1007,8 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
     );
   }
 
-  Widget _buildMetricCard(String title, String value, IconData icon, {bool showStars = false, double ratingValue = 0}) {
+  Widget _buildMetricCard(String title, String value, IconData icon,
+      {bool showStars = false, double ratingValue = 0}) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1005,139 +1066,129 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
   }
 
   Widget _buildSimilarProfiles() {
-    // Mock data for similar profiles
-    final similarProfiles = [
-      {
-        'name': 'Michael Chen',
-        'title': 'Technical Recruiter',
-        'location': 'San Francisco, CA',
-        'industries': ['Software', 'Data Science']
-      },
-      {
-        'name': 'Sarah Johnson',
-        'title': 'Senior IT Recruiter',
-        'location': 'San Jose, CA',
-        'industries': ['Backend', 'Cloud Engineering']
-      },
-      {
-        'name': 'David Williams',
-        'title': 'Tech Talent Acquisition',
-        'location': 'Oakland, CA',
-        'industries': ['Mobile Development', 'UI/UX']
-      }
-    ];
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('workers')
+          .where('city', isEqualTo: 'Mumbai')
+          .limit(3)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'More Profiles For You',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
-          ListView.builder(
-            physics: const NeverScrollableScrollPhysics(),
-            shrinkWrap: true,
-            itemCount: similarProfiles.length,
-            itemBuilder: (context, index) {
-              final profile = similarProfiles[index];
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                elevation: 2,
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 24,
-                        backgroundColor: Colors.grey[200],
-                        child: Text(
-                          (profile['name'] as String).split(' ').map((e) => e[0]).join(''),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.deepPurple,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              profile['name'] as String, // Explicit cast
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
+        if (snapshot.hasError) {
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text('Error: ${snapshot.error}'),
+          );
+        }
+
+        final workers = snapshot.data?.docs ?? [];
+
+        if (workers.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: const Text('No workers found in your area'),
+          );
+        }
+
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Workers Near You',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 200,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: workers.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(width: 16),
+                  itemBuilder: (context, index) {
+                    final worker =
+                        workers[index].data() as Map<String, dynamic>;
+                    return SizedBox(
+                      width: 180,
+                      child: Card(
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => WorkerProfileScreen(
+                                  workerId: workers[index].id,
+                                ),
                               ),
-                            ),
-                            Text(
-                              profile['title'] as String, // Explicit cast
-                              style: TextStyle(
-                                color: Colors.grey[700],
-                                fontSize: 14,
-                              ),
-                            ),
-                            Row(
+                            );
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Icon(Icons.location_on, size: 14, color: Colors.grey[600]),
-                                const SizedBox(width: 4),
+                                CircleAvatar(
+                                  radius: 30,
+                                  backgroundImage:
+                                      worker['profileImage'] != null
+                                          ? CachedNetworkImageProvider(
+                                              worker['profileImage'])
+                                          : null,
+                                  child: worker['profileImage'] == null
+                                      ? const Icon(Icons.person, size: 30)
+                                      : null,
+                                ),
+                                const SizedBox(height: 12),
                                 Text(
-                                  profile['location'] as String, // Explicit cast
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey[600],
+                                  worker['name'] ?? 'Worker',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
                                   ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  '₹${worker['hourlyRate']?.toString() ?? '0'}/hr',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Wrap(
+                                  spacing: 4,
+                                  children: (worker['skills'] as List<dynamic>?)
+                                          ?.take(2)
+                                          .map((skill) => Chip(
+                                                label: Text(skill.toString()),
+                                                backgroundColor: Colors
+                                                    .deepPurple
+                                                    .withOpacity(0.1),
+                                              ))
+                                          .toList() ??
+                                      [],
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 6),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: (profile['industries'] as List).map((industry) =>
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: Colors.deepPurple.withAlpha(25),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      industry.toString(),
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.deepPurple,
-                                      ),
-                                    ),
-                                  )
-                              ).toList(),
-                            ),
-                          ],
+                          ),
                         ),
                       ),
-                      OutlinedButton(
-                        onPressed: () {},
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Colors.deepPurple),
-                        ),
-                        child: const Text(
-                          'View',
-                          style: TextStyle(color: Colors.deepPurple),
-                        ),
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
-              );
-            },
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -1150,15 +1201,16 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
             onPressed: generatingSkills ? null : _generateSkills,
             icon: generatingSkills
                 ? const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.white,
-              ),
-            )
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
                 : const Icon(Icons.auto_fix_high),
-            label: Text(generatingSkills ? 'Generating...' : 'Generate Skills with AI'),
+            label: Text(
+                generatingSkills ? 'Generating...' : 'Generate Skills with AI'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.deepPurple,
               foregroundColor: Colors.white,

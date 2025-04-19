@@ -1,0 +1,210 @@
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:final5/services/ai_edit_dialog.dart';
+import 'package:final5/services/auth_screen.dart';
+import 'package:final5/services/chat_screen.dart';
+import 'package:final5/services/contractor_main_screen.dart';
+import 'package:final5/services/contractor_profile_page.dart';
+import 'package:final5/services/firebase_options.dart';
+import 'package:final5/services/job_applications_list_page.dart';
+import 'package:final5/services/jods_application_page.dart';
+import 'package:final5/services/notifications_page.dart';
+import 'package:final5/services/post_job_page.dart';
+import 'package:final5/services/posted_jobs_page.dart';
+import 'package:final5/services/registration_page.dart';
+
+class WorkerProfileScreen extends StatelessWidget {
+  final String workerId;
+
+  const WorkerProfileScreen({super.key, required this.workerId});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Worker Profile"),
+      ),
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('workers')
+            .doc(workerId)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final workerData = snapshot.data!.data() as Map<String, dynamic>;
+          
+          return _buildProfileView(workerData);
+        },
+      ),
+    );
+  }
+
+  Widget _buildProfileView(Map<String, dynamic> workerData) {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          _buildProfileHeader(workerData),
+          _buildProfileDetails(workerData),
+          _buildSkillsSection(workerData),
+          _buildActionButtons(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileHeader(Map<String, dynamic> workerData) {
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.center,
+      children: [
+        Container(
+          height: 180,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            image: DecorationImage(
+              image: workerData['backgroundImage'] != null
+                  ? CachedNetworkImageProvider(workerData['backgroundImage'])
+                  : const AssetImage('assets/default_bg.jpg') as ImageProvider,
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: -50,
+          child: CircleAvatar(
+            radius: 60,
+            backgroundColor: Colors.white,
+            child: CircleAvatar(
+              radius: 56,
+              backgroundImage: workerData['profileImage'] != null
+                  ? CachedNetworkImageProvider(workerData['profileImage'])
+                  : null,
+              child: workerData['profileImage'] == null
+                  ? const Icon(Icons.person, size: 50, color: Colors.grey)
+                  : null,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProfileDetails(Map<String, dynamic> workerData) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 60, 16, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Text(
+              workerData['name'] ?? 'Worker Name',
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          _buildInfoRow(Icons.email, 'Email', workerData['email'] ?? ''),
+          _buildInfoRow(Icons.phone, 'Phone', workerData['phone']?.toString() ?? ''),
+          _buildInfoRow(Icons.location_city, 'City', workerData['city'] ?? ''),
+          _buildInfoRow(Icons.pin_drop, 'Pin Code', workerData['pinCode']?.toString() ?? ''),
+          _buildInfoRow(Icons.access_time, 'Availability', workerData['availability'] ?? ''),
+          _buildInfoRow(Icons.attach_money, 'Hourly Rate', '₹${workerData['hourlyRate']?.toString() ?? ''}'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSkillsSection(Map<String, dynamic> workerData) {
+    final skills = workerData['skills'] as List<dynamic>? ?? [];
+    
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Skills',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: skills.expand((category) {
+              final categoryMap = category as Map<String, dynamic>;
+              return categoryMap.values.expand((skills) => skills as List<dynamic>);
+            }).map((skill) => Chip(
+              label: Text(skill.toString()),
+              backgroundColor: Colors.deepPurple.withOpacity(0.1),
+            )).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: () {/* Implement hire functionality */},
+              icon: const Icon(Icons.work),
+              label: const Text('Hire Now'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepPurple,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: () {/* Implement message functionality */},
+              icon: const Icon(Icons.message),
+              label: const Text('Message'),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Colors.deepPurple),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.deepPurple, size: 22),
+          const SizedBox(width: 12),
+          Text(
+            '$label: ',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 15),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
