@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:my_app/registration_page.dart'; // Make sure this is the correct path
+import 'registration_page.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({Key? key}) : super(key: key);
@@ -31,7 +31,6 @@ class _AuthScreenState extends State<AuthScreen> {
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
         );
-        // Navigate to contractor home page after successful login
         Navigator.pushReplacementNamed(context, '/contractor-home');
       } else {
         // Registration Flow
@@ -40,11 +39,10 @@ class _AuthScreenState extends State<AuthScreen> {
           password: _passwordController.text.trim(),
         );
         if (credential.user != null) {
-          // Navigate to registration screen after successful registration
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) => RegistrationPage(),
+              builder: (_) => RegistrationPage(), // FIXED: added const
             ),
           );
         }

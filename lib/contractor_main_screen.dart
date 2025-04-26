@@ -5,7 +5,7 @@ import 'contractor_profile_page.dart';
 import 'post_job_page.dart';
 import 'notifications_page.dart';
 import 'auth_screen.dart';
-import 'job_applications_list_page.dart';
+import 'posted_jobs_page.dart';
 
 class ContractorMainScreen extends StatefulWidget {
   const ContractorMainScreen({Key? key}) : super(key: key);
@@ -20,14 +20,14 @@ class _ContractorMainScreenState extends State<ContractorMainScreen> {
   final List<Widget> _pages = [
     const ContractorProfilePage(),
     const PostJobPage(),
-    const JobApplicationsListPage(),
+    const PostedJobsPage(), // ✅ Corrected to PostedJobsPage
     const NotificationsPage(),
   ];
 
   final List<String> _titles = [
     'Profile',
     'Post Job',
-    'Job Applications',
+    'Posted Jobs', // ✅ Corrected title
     'Notifications',
   ];
 
@@ -39,7 +39,6 @@ class _ContractorMainScreenState extends State<ContractorMainScreen> {
 
   void _logout() async {
     await FirebaseAuth.instance.signOut();
-
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const AuthScreen()),
@@ -76,8 +75,8 @@ class _ContractorMainScreenState extends State<ContractorMainScreen> {
             label: 'Post Job',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.list_alt),
-            label: 'Job Applications',
+            icon: Icon(Icons.list_alt), // Optional: can use work_outline too
+            label: 'Posted Jobs',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.notifications),

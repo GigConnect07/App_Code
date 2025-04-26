@@ -1,9 +1,11 @@
 import 'dart:io';
-
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
+import 'contractor_main_screen.dart';
 
 class RegistrationPage extends StatefulWidget {
   @override
@@ -12,12 +14,10 @@ class RegistrationPage extends StatefulWidget {
 
 class _RegistrationPageState extends State<RegistrationPage> {
   final _formKey = GlobalKey<FormBuilderState>();
-  bool showPassword = false;
-  bool showConfirmPassword = false;
   File? _profileImage;
   List<String> _selectedSkills = [];
 
-  // Image picker
+  // Pick image from gallery
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final pickedImage = await picker.pickImage(source: ImageSource.gallery);
@@ -28,103 +28,98 @@ class _RegistrationPageState extends State<RegistrationPage> {
     }
   }
 
-  // Form submission logic
-  void _submitForm() {
+  // Submit form and save data to Firestore
+  void _submitForm() async {
     if (_formKey.currentState?.saveAndValidate() ?? false) {
       final formData = _formKey.currentState!.value;
-      debugPrint("Form Submitted: $formData");
+      final user = FirebaseAuth.instance.currentUser;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Registration successful!")),
-      );
+      if (user == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("User not logged in.")),
+        );
+        return;
+      }
 
-      // Simulate redirect after a delay
-      Future.delayed(const Duration(seconds: 1), () {
-        Navigator.pushReplacementNamed(context, '/login');
-      });
+      final userDoc = FirebaseFirestore.instance.collection('users').doc(user.uid);
+      final snapshot = await userDoc.get();
+
+      if (!snapshot.exists) {
+        await userDoc.set({
+          'uid': user.uid,
+          'email': formData['email'],
+          'fullName': formData['fullName'],
+          'phone': formData['phone'],
+          'companyName': formData['companyName'],
+          'address': formData['address'],
+          'city': formData['city'],
+          'state': formData['state'],
+          'pinCode': formData['pin Code'],
+          'yearsOfExperience': formData['yearsOfExperience'],
+          'specialization': formData['specialization'],
+          'bio': formData['bio'],
+          'skills': _selectedSkills,
+          'profileCompleted': true,
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Registration successful!")),
+        );
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const ContractorMainScreen()),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("You have already registered.")),
+        );
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const ContractorMainScreen()),
+        );
+      }
     }
   }
 
   Widget _buildSkillsField() {
-    return FormBuilderField(
+    return FormBuilderFilterChip<String>(
       name: 'skills',
-      validator: (value) {
-        // Check if value is null or an empty list
-        if (value == null || (value is List && value.isEmpty)) {
-          return 'Please select at least one skill';
-        }
-        return null;
-      },
-      builder: (FormFieldState state) {
-        return InputDecorator(
-          decoration: InputDecoration(
-            labelText: 'Select Skills',
-            border: OutlineInputBorder(),
-            errorText: state.errorText,
-          ),
-          child: DropdownButton<String>(
-            isExpanded: true,
-            value: _selectedSkills.isNotEmpty ? _selectedSkills[0] : null,
-            items: ['Skill 1', 'Skill 2', 'Skill 3', 'Skill 4']
-                .map((String skill) {
-              return DropdownMenuItem<String>(
-                value: skill,
-                child: Text(skill),
-              );
-            }).toList(),
-            onChanged: (String? newSkill) {
-              setState(() {
-                if (newSkill != null) {
-                  _selectedSkills = [newSkill]; // Set selected skill
-                  state.didChange(_selectedSkills); // Update form state
-                }
-              });
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  /*Widget _buildSkillsField() {
-    return FormBuilderField(
-      name: 'skills',
+      decoration: const InputDecoration(
+        labelText: 'Select Skills',
+        border: InputBorder.none,
+      ),
+      options: const [
+        FormBuilderChipOption(value: 'Skill 1', child: Text('Plumbing')),
+        FormBuilderChipOption(value: 'Skill 2', child: Text('Electrical work')),
+        FormBuilderChipOption(value: 'Skill 3', child: Text('Carpentry')),
+        FormBuilderChipOption(value: 'Skill 4', child: Text('Welding')),
+        FormBuilderChipOption(value: 'Skill 5', child: Text('Painting')),
+        FormBuilderChipOption(value: 'Skill 6', child: Text('Roofing')),
+        FormBuilderChipOption(value: 'Skill 7', child: Text('Masonry')),
+        FormBuilderChipOption(value: 'Skill 8', child: Text('Tiling and flooring')),
+        FormBuilderChipOption(value: 'Skill 9', child: Text('HVAC installation and repair')),
+        FormBuilderChipOption(value: 'Skill 10', child: Text('Operating heavy machinery')),
+        FormBuilderChipOption(value: 'Skill 11', child: Text('Scaffolding setup')),
+        FormBuilderChipOption(value: 'Skill 12', child: Text('Blueprint reading and interpretation')),
+      ],
       validator: (value) {
         if (value == null || value.isEmpty) {
           return 'Please select at least one skill';
         }
         return null;
       },
-      builder: (FormFieldState state) {
-        return InputDecorator(
-          decoration: InputDecoration(
-            labelText: 'Select Skills',
-            border: OutlineInputBorder(),
-            errorText: state.errorText,
-          ),
-          child: DropdownButton<String>(
-            isExpanded: true,
-            value: _selectedSkills.isNotEmpty ? _selectedSkills[0] : null,
-            items: ['Skill 1', 'Skill 2', 'Skill 3', 'Skill 4']
-                .map((String skill) {
-              return DropdownMenuItem<String>(
-                value: skill,
-                child: Text(skill),
-              );
-            }).toList(),
-            onChanged: (String? newSkill) {
-              setState(() {
-                if (newSkill != null) {
-                  _selectedSkills = [newSkill]; // Set selected skill
-                  state.didChange(_selectedSkills); // Update form state
-                }
-              });
-            },
-          ),
-        );
-      },
+      onChanged: (value) => _selectedSkills = value ?? [],
     );
-  }*/
+  }
+
+  Widget _sectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -137,7 +132,6 @@ class _RegistrationPageState extends State<RegistrationPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Profile Image Upload
               Center(
                 child: Stack(
                   children: [
@@ -162,8 +156,6 @@ class _RegistrationPageState extends State<RegistrationPage> {
                 ),
               ),
               const SizedBox(height: 24),
-
-              // Personal Information Section
               _sectionTitle("Personal Information"),
               FormBuilderTextField(
                 name: 'fullName',
@@ -190,17 +182,12 @@ class _RegistrationPageState extends State<RegistrationPage> {
                 ]),
               ),
               const SizedBox(height: 24),
-
-              // Company Information Section
               _sectionTitle("Company Information"),
               FormBuilderTextField(
                 name: 'companyName',
                 decoration: const InputDecoration(labelText: "Company Name"),
-                validator: FormBuilderValidators.required(),
               ),
               const SizedBox(height: 24),
-
-              // Location Section
               _sectionTitle("Location Information"),
               FormBuilderTextField(
                 name: 'address',
@@ -218,13 +205,11 @@ class _RegistrationPageState extends State<RegistrationPage> {
                 validator: FormBuilderValidators.required(),
               ),
               FormBuilderTextField(
-                name: 'zipCode',
-                decoration: const InputDecoration(labelText: "Zip Code"),
+                name: 'pin Code',
+                decoration: const InputDecoration(labelText: "Pin Code"),
                 validator: FormBuilderValidators.required(),
               ),
               const SizedBox(height: 24),
-
-              // Professional Information Section
               _sectionTitle("Professional Information"),
               FormBuilderTextField(
                 name: 'yearsOfExperience',
@@ -238,8 +223,6 @@ class _RegistrationPageState extends State<RegistrationPage> {
                 validator: FormBuilderValidators.required(),
               ),
               const SizedBox(height: 24),
-
-              // About Section
               _sectionTitle("About"),
               FormBuilderTextField(
                 name: 'bio',
@@ -252,13 +235,9 @@ class _RegistrationPageState extends State<RegistrationPage> {
                 ]),
               ),
               const SizedBox(height: 24),
-
-              // Skills Section
+              _sectionTitle("Skills"),
               _buildSkillsField(),
-
               const SizedBox(height: 32),
-
-              // Submit Button
               ElevatedButton(
                 onPressed: _submitForm,
                 child: const Text("Complete Registration"),
@@ -268,14 +247,6 @@ class _RegistrationPageState extends State<RegistrationPage> {
           ),
         ),
       ),
-    );
-  }
-
-  // Section title widget
-  Widget _sectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
     );
   }
 }

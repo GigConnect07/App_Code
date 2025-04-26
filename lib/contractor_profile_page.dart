@@ -1,7 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'chat_screen.dart';
+import 'package:image_picker/image_picker.dart';
 import 'contractor_main_screen.dart';
 
 class ContractorProfilePage extends StatefulWidget {
@@ -19,11 +20,18 @@ class _ContractorProfilePageState extends State<ContractorProfilePage> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _companyNameController = TextEditingController();
   final TextEditingController _cityController = TextEditingController();
-  final TextEditingController _pinCodeController = TextEditingController();
+  final TextEditingController _addressController = TextEditingController();
+  final TextEditingController _stateController = TextEditingController();
+  final TextEditingController _zipCodeController = TextEditingController();
+  final TextEditingController _experienceController = TextEditingController();
+  final TextEditingController _specializationController = TextEditingController();
+  final TextEditingController _bioController = TextEditingController();
 
   bool _isEditing = false;
-  Map<String, List<String>> _skills = {};
+  List<String> _skills = [];
+  File? _profileImage;
 
   User? _user;
   DocumentReference? _userRef;
@@ -38,20 +46,37 @@ class _ContractorProfilePageState extends State<ContractorProfilePage> {
     }
   }
 
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedImage = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedImage != null) {
+      setState(() => _profileImage = File(pickedImage.path));
+      // TODO: Upload to Firebase Storage and update imageURL if needed
+    }
+  }
+
   Future<void> _loadUserData() async {
     if (_userRef != null) {
       final snapshot = await _userRef!.get();
       if (snapshot.exists) {
         final data = snapshot.data() as Map<String, dynamic>;
         setState(() {
-          _nameController.text = data['name'] ?? '';
+          _nameController.text = data['fullName'] ?? '';
           _emailController.text = data['email'] ?? '';
           _phoneController.text = data['phone'] ?? '';
+          _companyNameController.text = data['companyName'] ?? '';
           _cityController.text = data['city'] ?? '';
-          _pinCodeController.text = data['pinCode'] ?? '';
-          _skills = Map<String, List<String>>.from(
-            (data['skills'] ?? {}).map((key, value) => MapEntry(key, List<String>.from(value))),
-          );
+          _addressController.text = data['address'] ?? '';
+          _stateController.text = data['state'] ?? '';
+          _zipCodeController.text = data['zipCode'] ?? '';
+          _experienceController.text = (data['yearsOfExperience'] ?? '').toString();
+          _specializationController.text = data['specialization'] ?? '';
+          _bioController.text = data['bio'] ?? '';
+          if (data['skills'] != null) {
+            _skills = List<String>.from(data['skills']);
+          } else {
+            _skills = [];
+          }
         });
       }
     }
@@ -59,28 +84,37 @@ class _ContractorProfilePageState extends State<ContractorProfilePage> {
 
   Future<void> _updateUserData() async {
     if (_formKey.currentState!.validate()) {
-      // Update user data
-      await _userRef?.update({
-        'name': _nameController.text,
-        'phone': _phoneController.text,
-        'city': _cityController.text,
-        'pinCode': _pinCodeController.text,
-        'profileCompleted': true, // Set profile as completed
-      });
+      try {
+        await _userRef?.update({
+          'fullName': _nameController.text.trim(),
+          'phone': _phoneController.text.trim(),
+          'companyName': _companyNameController.text.trim(),
+          'city': _cityController.text.trim(),
+          'address': _addressController.text.trim(),
+          'state': _stateController.text.trim(),
+          'zipCode': _zipCodeController.text.trim(),
+          'yearsOfExperience': _experienceController.text.trim(),
+          'specialization': _specializationController.text.trim(),
+          'bio': _bioController.text.trim(),
+          'skills': _skills,
+          'profileCompleted': true,
+        });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile updated successfully')),
-      );
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile updated successfully')),
+        );
 
-      // Navigate to the main screen after profile update
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const ContractorMainScreen()),
-      );
+        setState(() => _isEditing = false);
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Update failed: $e')),
+        );
+      }
     }
   }
 
-  Widget _buildProfileField(String label, TextEditingController controller, IconData icon, {bool enabled = false}) {
+  Widget _buildProfileField(String label, TextEditingController controller, IconData icon,
+      {bool enabled = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: TextFormField(
@@ -91,33 +125,42 @@ class _ContractorProfilePageState extends State<ContractorProfilePage> {
           prefixIcon: Icon(icon),
           border: const OutlineInputBorder(),
         ),
-        validator: (value) => value == null || value.isEmpty ? 'Enter $label' : null,
+        validator: (value) =>
+        (enabled && (value == null || value.isEmpty)) ? 'Enter $label' : null,
       ),
     );
   }
 
   Widget _buildSkillsSection() {
-    if (_skills.isEmpty) return const SizedBox.shrink();
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 20),
         const Text("Skills", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         const SizedBox(height: 10),
-        ..._skills.entries.map((entry) => Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(entry.key, style: const TextStyle(fontWeight: FontWeight.bold)),
-            Wrap(
-              spacing: 8,
-              children: entry.value.map((skill) {
-                return Chip(label: Text(skill));
-              }).toList(),
-            ),
-            const SizedBox(height: 10),
-          ],
-        )),
+        if (_skills.isNotEmpty)
+          Wrap(
+            spacing: 8,
+            children: _skills.map((skill) {
+              return Chip(
+                label: Text(skill),
+                onDeleted: _isEditing
+                    ? () => setState(() => _skills.remove(skill))
+                    : null,
+              );
+            }).toList(),
+          )
+        else
+          const Text("No skills added"),
+        if (_isEditing)
+          TextFormField(
+            decoration: const InputDecoration(labelText: "Add Skill"),
+            onFieldSubmitted: (value) {
+              if (value.isNotEmpty) {
+                setState(() => _skills.add(value));
+              }
+            },
+          ),
       ],
     );
   }
@@ -127,15 +170,14 @@ class _ContractorProfilePageState extends State<ContractorProfilePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Contractor Profile'),
-        backgroundColor: const Color(0xFFBA55D3),
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await _auth.signOut();
-              Navigator.pushReplacementNamed(context, '/login');
+            icon: Icon(_isEditing ? Icons.cancel : Icons.edit),
+            onPressed: () {
+              setState(() => _isEditing = !_isEditing);
+              if (!_isEditing) _loadUserData(); // Reload data if cancelling edit
             },
-          )
+          ),
         ],
       ),
       body: Padding(
@@ -144,55 +186,48 @@ class _ContractorProfilePageState extends State<ContractorProfilePage> {
           key: _formKey,
           child: ListView(
             children: [
-              const CircleAvatar(radius: 50, backgroundImage: AssetImage('assets/avatar.png')),
-              const SizedBox(height: 30),
-              _buildProfileField("Full Name", _nameController, Icons.person, enabled: _isEditing),
-              _buildProfileField("Email", _emailController, Icons.email), // Not editable
-              _buildProfileField("Phone Number", _phoneController, Icons.phone, enabled: _isEditing),
-              _buildProfileField("City", _cityController, Icons.location_city, enabled: _isEditing),
-              _buildProfileField("Pin Code", _pinCodeController, Icons.pin_drop, enabled: _isEditing),
-              _buildSkillsSection(),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      setState(() => _isEditing = !_isEditing);
-                      if (!_isEditing) _loadUserData(); // Revert if cancelled
-                    },
-                    icon: Icon(_isEditing ? Icons.cancel : Icons.edit),
-                    label: Text(_isEditing ? 'Cancel' : 'Edit'),
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-                  ),
-                  if (_isEditing)
-                    ElevatedButton.icon(
-                      onPressed: _updateUserData,
-                      icon: const Icon(Icons.save),
-                      label: const Text('Save'),
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 30),
               Center(
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const ChatScreen(receiverId: 'workerUid123'), // Replace dynamically
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.chat),
-                  label: const Text('Chat with Worker'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blueAccent,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  ),
+                child: Stack(
+                  children: [
+                    CircleAvatar(
+                      radius: 60,
+                      backgroundImage: _profileImage != null
+                          ? FileImage(_profileImage!)
+                          : const AssetImage('assets/avatar.png') as ImageProvider,
+                    ),
+                    if (_isEditing)
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: IconButton(
+                          icon: const Icon(Icons.camera_alt),
+                          onPressed: _pickImage,
+                        ),
+                      )
+                  ],
                 ),
               ),
+              const SizedBox(height: 30),
+              _buildProfileField("Full Name", _nameController, Icons.person, enabled: _isEditing),
+              _buildProfileField("Email", _emailController, Icons.email, enabled: false),
+              _buildProfileField("Phone Number", _phoneController, Icons.phone, enabled: _isEditing),
+              _buildProfileField("Company Name", _companyNameController, Icons.business, enabled: _isEditing),
+              _buildProfileField("Street Address", _addressController, Icons.location_on, enabled: _isEditing),
+              _buildProfileField("City", _cityController, Icons.location_city, enabled: _isEditing),
+              _buildProfileField("State", _stateController, Icons.map, enabled: _isEditing),
+              _buildProfileField("Zip Code", _zipCodeController, Icons.pin_drop, enabled: _isEditing),
+              _buildProfileField("Years of Experience", _experienceController, Icons.timeline, enabled: _isEditing),
+              _buildProfileField("Specialization", _specializationController, Icons.build, enabled: _isEditing),
+              _buildProfileField("Bio", _bioController, Icons.info, enabled: _isEditing),
+              _buildSkillsSection(),
+              const SizedBox(height: 20),
+              if (_isEditing)
+                ElevatedButton.icon(
+                  onPressed: _updateUserData,
+                  icon: const Icon(Icons.save),
+                  label: const Text('Save Changes'),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                ),
             ],
           ),
         ),

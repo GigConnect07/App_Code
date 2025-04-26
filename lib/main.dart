@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // Ensure you have the Cloud Firestore package
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 // Screens
 import 'auth_screen.dart';
@@ -40,35 +40,36 @@ class MyApp extends StatelessWidget {
       ),
       home: StreamBuilder<User?>(
         stream: FirebaseAuth.instance.authStateChanges(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+        builder: (context, authSnapshot) {
+          if (authSnapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (snapshot.hasData) {
-            // Check if the user exists in Firestore (i.e., profile is completed)
+          if (authSnapshot.hasData) {
+            final user = authSnapshot.data!;
             return FutureBuilder<DocumentSnapshot>(
-              future: FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(snapshot.data!.uid) // Get the user doc using UID
-                  .get(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
+              future: FirebaseFirestore.instance.collection('users').doc(user.uid).get(),
+              builder: (context, profileSnapshot) {
+                if (profileSnapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                if (snapshot.hasData && snapshot.data!.exists) {
-                  // If user document exists, navigate to the main screen
+                if (profileSnapshot.hasError) {
+                  return Center(child: Text("Something went wrong: ${profileSnapshot.error}"));
+                }
+
+                if (profileSnapshot.hasData && profileSnapshot.data!.exists) {
+                  // If profile exists in Firestore, go to Contractor Main Screen
                   return const ContractorMainScreen();
                 } else {
-                  // If user document does not exist, navigate to the registration page
-                  return RegistrationPage();
+                  // If profile doesn't exist, show registration page
+                  return RegistrationPage(); // FIXED HERE
                 }
               },
             );
           }
 
-          // If user is not logged in, show the auth screen
+          // If no user is signed in, show the Auth screen
           return const AuthScreen();
         },
       ),
@@ -76,6 +77,7 @@ class MyApp extends StatelessWidget {
         '/profile': (context) => const ContractorProfilePage(),
         '/postJob': (context) => const PostJobPage(),
         '/notifications': (context) => const NotificationsPage(),
+        '/contractor-home': (context) => const ContractorMainScreen(), // ADDED THIS ROUTE
       },
     );
   }

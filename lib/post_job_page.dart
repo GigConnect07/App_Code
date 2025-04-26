@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:multi_select_flutter/multi_select_flutter.dart';
 
 class PostJobPage extends StatefulWidget {
   const PostJobPage({Key? key}) : super(key: key);
@@ -19,13 +20,31 @@ class _PostJobPageState extends State<PostJobPage> {
   final maxRateController = TextEditingController();
   final descriptionController = TextEditingController();
   final requirementsController = TextEditingController();
-  final skillsController = TextEditingController();
 
+  List<String> selectedSkills = [];
   String? jobType;
   String? experienceLevel;
   String? duration;
   String paymentType = 'hourly';
   DateTime? selectedDate;
+
+  final List<String> allSkills = [
+    'Carpentry (framing, finishing)',
+    'Masonry (bricklaying, concrete finishing)',
+    'Plumbing',
+    'Electrical work',
+    'HVAC installation and repair',
+    'Welding',
+    'Drywall installation and finishing',
+    'Painting',
+    'Roofing',
+    'Tiling and flooring',
+    'Scaffolding setup',
+    'Operating heavy machinery (cranes, bulldozers, forklifts)',
+    'Blueprint reading and interpretation',
+    'Surveying and leveling',
+    'Use of hand and power tools',
+  ];
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -35,14 +54,12 @@ class _PostJobPageState extends State<PostJobPage> {
       lastDate: DateTime(2101),
     );
     if (picked != null) {
-      setState(() {
-        selectedDate = picked;
-      });
+      setState(() => selectedDate = picked);
     }
   }
 
   Future<void> handleSubmit() async {
-    if (_formKey.currentState!.validate() && selectedDate != null) {
+    if (_formKey.currentState!.validate() && selectedDate != null && selectedSkills.isNotEmpty) {
       final user = FirebaseAuth.instance.currentUser;
 
       if (user != null) {
@@ -54,7 +71,7 @@ class _PostJobPageState extends State<PostJobPage> {
           'maxRate': maxRateController.text.trim(),
           'description': descriptionController.text.trim(),
           'requirements': requirementsController.text.trim(),
-          'skills': skillsController.text.trim(),
+          'skills': selectedSkills,
           'jobType': jobType,
           'experienceLevel': experienceLevel,
           'duration': duration,
@@ -71,6 +88,7 @@ class _PostJobPageState extends State<PostJobPage> {
 
         _formKey.currentState!.reset();
         setState(() {
+          selectedSkills = [];
           selectedDate = null;
           jobType = null;
           experienceLevel = null;
@@ -85,6 +103,10 @@ class _PostJobPageState extends State<PostJobPage> {
     } else if (selectedDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select a start date')),
+      );
+    } else if (selectedSkills.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select at least one skill')),
       );
     }
   }
@@ -178,11 +200,28 @@ class _PostJobPageState extends State<PostJobPage> {
                 maxLines: 4,
                 decoration: const InputDecoration(labelText: 'Requirements'),
               ),
-              TextFormField(
-                controller: skillsController,
-                decoration: const InputDecoration(labelText: 'Required Skills (comma separated) *'),
-                validator: (value) => value!.isEmpty ? 'Enter required skills' : null,
+
+              // 🛠 Multi-select Dropdown for Skills
+              const SizedBox(height: 12),
+              MultiSelectDialogField(
+                items: allSkills.map((skill) => MultiSelectItem<String>(skill, skill)).toList(),
+                title: const Text("Select Required Skills"),
+                selectedColor: Colors.blue,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(5),
+                  border: Border.all(color: Colors.grey),
+                ),
+                buttonIcon: const Icon(Icons.arrow_drop_down),
+                buttonText: const Text("Required Skills *"),
+                onConfirm: (results) {
+                  setState(() {
+                    selectedSkills = results.cast<String>();
+                  });
+                },
+                validator: (value) => value == null || value.isEmpty ? 'Please select skills' : null,
               ),
+
+              const SizedBox(height: 16),
               DropdownButtonFormField(
                 value: experienceLevel,
                 decoration: const InputDecoration(labelText: 'Experience Level *'),
