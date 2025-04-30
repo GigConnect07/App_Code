@@ -1,0 +1,2 @@
+C:/Users/Mayuresh/Downloads/App_Code-mayuresh/App_Code-mayuresh/android/app/.cxx/Debug/3t1f374h/armeabi-v7a/CMakeFiles/edit_cache.dir
+C:/Users/Mayuresh/Downloads/App_Code-mayuresh/App_Code-mayuresh/android/app/.cxx/Debug/3t1f374h/armeabi-v7a/CMakeFiles/rebuild_cache.dir

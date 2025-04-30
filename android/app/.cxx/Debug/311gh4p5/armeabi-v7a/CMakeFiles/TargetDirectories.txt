@@ -1,0 +1,2 @@
+C:/Users/Mayuresh/Downloads/maingigmain_app/maingigmain_app/android/app/.cxx/Debug/311gh4p5/armeabi-v7a/CMakeFiles/edit_cache.dir
+C:/Users/Mayuresh/Downloads/maingigmain_app/maingigmain_app/android/app/.cxx/Debug/311gh4p5/armeabi-v7a/CMakeFiles/rebuild_cache.dir

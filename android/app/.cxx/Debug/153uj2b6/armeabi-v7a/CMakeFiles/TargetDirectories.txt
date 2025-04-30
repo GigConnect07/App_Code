@@ -1,0 +1,2 @@
+D:/practise_app/prt/App_Code-mayuresh/App_Code-mayuresh/android/app/.cxx/Debug/153uj2b6/armeabi-v7a/CMakeFiles/edit_cache.dir
+D:/practise_app/prt/App_Code-mayuresh/App_Code-mayuresh/android/app/.cxx/Debug/153uj2b6/armeabi-v7a/CMakeFiles/rebuild_cache.dir

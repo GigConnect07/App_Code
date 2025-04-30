@@ -1,0 +1,2 @@
+D:/practise_app/prt/main_app/main_app/main_app/android/app/.cxx/Debug/716e4624/armeabi-v7a/CMakeFiles/edit_cache.dir
+D:/practise_app/prt/main_app/main_app/main_app/android/app/.cxx/Debug/716e4624/armeabi-v7a/CMakeFiles/rebuild_cache.dir

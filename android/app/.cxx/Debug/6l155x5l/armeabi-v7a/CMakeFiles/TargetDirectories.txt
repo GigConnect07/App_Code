@@ -1,0 +1,2 @@
+C:/Users/Mayuresh/OneDrive/Desktop/MyApp/gig_connect/android/app/.cxx/Debug/6l155x5l/armeabi-v7a/CMakeFiles/edit_cache.dir
+C:/Users/Mayuresh/OneDrive/Desktop/MyApp/gig_connect/android/app/.cxx/Debug/6l155x5l/armeabi-v7a/CMakeFiles/rebuild_cache.dir
